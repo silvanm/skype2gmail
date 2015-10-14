@@ -1,0 +1,13 @@
+{
+    "require": {
+        "google/apiclient": "1.*",
+        "zetacomponents/mail": "^1.8",
+        "symfony/console": "^2.7"
+    },
+
+    "autoload": {
+        "psr-0": {
+            "Mpom\\": "src/"
+        }
+    }
+}
