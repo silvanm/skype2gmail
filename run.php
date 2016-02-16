@@ -1,43 +1,50 @@
 <?php
 
-include( "vendor/autoload.php" );
+include("vendor/autoload.php");
 
 error_reporting(E_ALL);
 
-$config = [
-    'gmail_application_name'    => 'SkypeToGmail',
-    'gmail_credentials_path'    => 'config/skype-to-gmail.json',
-    'gmail_client_secrets_path' => 'config/client_secret.json',
-    'me'                        => 'silvanm75',
-    'dsn'                       => 'sqlite:'.__DIR__."/../../../main.db",
-    'statusDbDsn'               => 'sqlite:'.__DIR__."/data/statusDb.db",
-    'inactivityTriggerSeconds'  => 3600,
-];
+$config = include "config/config.php";
 
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-$console = new Application();
-
-$skypeToGmail = new Mpom\SkypeToGmail($config);
+$console = new Application("SkypeToGmail");
 
 $console
-    ->register('sync')
-    ->setDescription('Initializes the Statusdb ')
-    ->setCode(function (InputInterface $input, OutputInterface $output) use ($skypeToGmail) {
+    ->register('import')
+    ->setDescription('Import the Skype conversations into Gmail')
+    ->addOption(
+        'progress',
+        'p',
+        InputOption::VALUE_NONE,
+        'Show a progressbar'
+    )
+    ->setCode(function (InputInterface $input, OutputInterface $output) use ($config) {
+        $skypeToGmail = new Mpom\SkypeToGmail($config, $input, $output);
         $skypeToGmail->getConversations();
-    })
-;
+    });
 
 $console
-    ->register('initdb')
-    ->setDescription('Initializes the Statusdb ')
-    ->setCode(function (InputInterface $input, OutputInterface $output) use ($skypeToGmail) {
+    ->register('labels')
+    ->setDescription('Show all Gmail labels')
+    ->setCode(function (InputInterface $input, OutputInterface $output) use ($config) {
+        $output->writeln("<info>Showing all possible Gmail labels of your account</info>");
+        $skypeToGmail = new Mpom\SkypeToGmail($config, $input, $output);
+        $skypeToGmail->showLabels();
+    });
+
+$console
+    ->register('init')
+    ->setDescription('Initializes the StatusDB and Gmail API')
+    ->setCode(function (InputInterface $input, OutputInterface $output) use ($config) {
+        $output->writeln("<info>Initializing StatusDb</info>");
+        $skypeToGmail = new Mpom\SkypeToGmail($config, $input, $output);
         $skypeToGmail->initStatusDb();
-    })
-;
+        $skypeToGmail->initGmailConnection();
+        $output->writeln("Initialization successful");
+    });
 
 $console->run();

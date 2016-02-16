@@ -1,0 +1,24 @@
+<?php
+
+// Copy this file to "config.php" and replace the values in the uppercase letters
+
+return [
+    'me' => 'YOUR_SKYPE_USERNAME',
+
+    // Absolute path to skype DB
+    // e.g. "sqlite:/Users/OSX_USERNAME/Library/Application Support/Skype/SKYPE_USERNAME/main.db"
+    'dsn' => 'sqlite:SKYPE_DB',
+    'statusDbDsn' => 'sqlite:' . __DIR__ . "/data/statusDb.db",
+
+    // After how many seconds of inactivity a conversation should be considered as closed
+    'inactivityTriggerSeconds' => 3600,
+
+    // Set the label under which you want to store the messages.
+    // use the console command "labels" to show the internal name of all labels
+    'label' => 'INBOX',
+
+    // No need to change that.
+    'gmail_application_name' => 'SkypeToGmail',
+    'gmail_credentials_path' => 'config/skype-to-gmail.json',
+    'gmail_client_secrets_path' => 'config/client_secret.json',
+];

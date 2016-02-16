@@ -10,6 +10,7 @@ use ezcMailAddress;
 use ezcMailComposer;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class ConversationSegment
 {
@@ -21,20 +22,32 @@ class ConversationSegment
 
     protected $messages = [];
 
+    /** @var integer */
     protected $convoId = null;
 
+    /** @var string */
     protected $displayname = '';
+
+    /** @var OutputInterface */
+    protected $output;
 
     /**
      * @var Gmail
      */
     protected $gmail = null;
 
-    public function __construct(Gmail $gmail, \PDO $dbh, \PDO $statusDbh)
+    /**
+     * @var array
+     */
+    protected $config;
+
+    public function __construct(Gmail $gmail, \PDO $dbh, \PDO $statusDbh, OutputInterface $output, $config)
     {
-        $this->gmail     = $gmail;
-        $this->dbh       = $dbh;
+        $this->gmail = $gmail;
+        $this->dbh = $dbh;
         $this->statusDbh = $statusDbh;
+        $this->output = $output;
+        $this->config = $config;
     }
 
     /**
@@ -48,20 +61,20 @@ class ConversationSegment
     public function addMessage($timestamp, $from, $message, $convo_id, $message_id, $displayname)
     {
 
-        if ( ! is_null($this->convoId)) {
+        if (!is_null($this->convoId)) {
             if ($convo_id != $this->convoId) {
                 throw new \Exception("All messages added to a conversation segment must have the same convo_id");
             }
         }
-        $this->convoId     = $convo_id;
+        $this->convoId = $convo_id;
         $this->displayname = $displayname;
 
         $this->messages[] = [
-            'convo_id'   => $convo_id,
+            'convo_id' => $convo_id,
             'message_id' => $message_id,
-            'timestamp'  => $timestamp,
-            'from'       => $this->resolveNameToEmail($from),
-            'message'    => $this->filterMessageText($message),
+            'timestamp' => $timestamp,
+            'from' => $this->resolveNameToEmail($from),
+            'message' => $this->filterMessageText($message),
         ];
     }
 
@@ -87,12 +100,13 @@ class ConversationSegment
     {
         $partners = [];
         foreach ($this->messages as $message) {
-            if (isset( $partners[$message['from']['name']] )) {
+            if (isset($partners[$message['from']['name']])) {
                 $partners[$message['from']['name']]['count']++;
             } else {
                 $partners[$message['from']['name']] = [
+                    'skypename' => $message['from']['skypename'],
                     'email' => $message['from']['email'],
-                    'name'  => $message['from']['name'],
+                    'name' => $message['from']['name'],
                     'count' => 1,
                 ];
             }
@@ -112,24 +126,20 @@ class ConversationSegment
      */
     public function store()
     {
-        // Store it in the Gmail service
-
         $mail = new ezcMailComposer();
 
         $first = true;
         foreach ($this->getPartnersSkypename() as $partner) {
             $address = new ezcMailAddress(
-                empty( $partner['email'] ) ? $partner['skypename'].'@unknown.com' : $partner['email'], $partner['name']
+                empty($partner['email']) ? $partner['skypename'] . '@unknown.com' : $partner['email'], $partner['name']
             );
-            if ($first) {
+            if ($first && $partner['skypename']) {
                 $mail->from = $address;
-                $first      = false;
+                $first = false;
             } else {
                 $mail->addTo($address);
             }
-
         }
-
 
         // Specify the subject of the mail
         $mail->subject = $this->displayname;
@@ -141,18 +151,19 @@ class ConversationSegment
 
         $mailWithCorrectDate = preg_replace(
             '/^Date:.*$/m',
-            'Date: '.date('r', $this->getMaxTimestamp()),
+            'Date: ' . date('r', $this->getMaxTimestamp()),
             $mail->generate()
         );
 
         $msgbody = new Google_Service_Gmail_Message();
         $msgbody->setRaw(rtrim(strtr(base64_encode($mailWithCorrectDate), '+/', '-_'), '='));
-
-        echo $mailWithCorrectDate;
-
-        $msgbody->setLabelIds(['Label_127']); // @todo make this dynamic
+        $msgbody->setLabelIds([$this->config['label']]);
         $service = new Google_Service_Gmail($this->gmail->getClient());
         $service->users_messages->insert('me', $msgbody, ['internalDateSource' => 'dateHeader']);
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+            $this->output->writeln("Storing convesation with subject '{$mail->subject}' and date '" . date('r',
+                    $this->getMaxTimestamp()) . "'");
+        }
     }
 
     protected function filterMessageText($text)
@@ -184,7 +195,7 @@ class ConversationSegment
 
     public function toHtml()
     {
-        $out          = '<table>';
+        $out = '<table>';
         $previousName = null;
         foreach ($this->messages as $message) {
 
@@ -192,18 +203,18 @@ class ConversationSegment
 
             if ($message['from']['name'] != $previousName) {
                 $out .= '<td style="vertical-align: top; white-space: nowrap">'
-                        .date(
-                            'D, j. M Y H:i',
-                            $message['timestamp']
-                        )
-                        ."</td><td style='vertical-align: top; white-space: nowrap'><b>".$message['from']['name']
-                        ."</b></td>";
+                    . date(
+                        'D, j. M Y H:i',
+                        $message['timestamp']
+                    )
+                    . "</td><td style='vertical-align: top; white-space: nowrap'><b>" . $message['from']['name']
+                    . "</b></td>";
             } else {
                 $out .= '<td style="vertical-align: top; white-space: nowrap"></td><td></td>';
             }
             $previousName = $message['from']['name'];
 
-            $out .= "<td style='vertical-align: top'>".$message['message']."</td></tr>";
+            $out .= "<td style='vertical-align: top'>" . $message['message'] . "</td></tr>";
         }
 
         $out .= "</table>";
@@ -216,10 +227,10 @@ class ConversationSegment
         $out = '';
 
         foreach ($this->messages as $message) {
-            $out .= $message['convo_id']." ".$message['message_id']." ".date(
+            $out .= $message['convo_id'] . " " . $message['message_id'] . " " . date(
                     'r',
                     $message['timestamp']
-                )." ".$message['from']['name'].": ".$message['message']."\n";
+                ) . " " . $message['from']['name'] . ": " . $message['message'] . "\n";
         }
 
         return $out;

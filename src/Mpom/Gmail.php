@@ -1,7 +1,4 @@
 <?php
-/**
- * @author Silvan
- */
 
 namespace Mpom;
 

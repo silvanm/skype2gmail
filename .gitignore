@@ -48,3 +48,5 @@ build/config/buildinfo.properties
 .~lock.*
 vendor
 
+!.gitkeep
+!config/config.php.dist
