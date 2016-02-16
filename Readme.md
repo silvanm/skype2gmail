@@ -2,6 +2,8 @@
 # SkypeToGmail
 Import your Skype conversations to your Gmail account to make them searchable.
 
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/silvanm/skype2gmail/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/silvanm/skype2gmail/?branch=master)
+
 ## Introduction
 A lot of my business communication goes via Skype. In contrast to email Skype does not provide full text search ability
 across conversations.

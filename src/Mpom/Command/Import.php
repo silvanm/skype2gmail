@@ -78,7 +78,6 @@ class Import extends CommandAbstract
             if (isset($progress)) {
                 $progress->advance();
             }
-            $segment = null;
         }
 
         if (isset($progress)) {
