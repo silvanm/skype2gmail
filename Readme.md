@@ -64,10 +64,11 @@ Shows all labels of your Gmail account with their internal name to use for the `
 
 ## Map Skype names to email addresses
 
-The script creates dummy mail addresses in the form `skypename@unknown.com`. I you would like to use real mail addresses add an entry in the table `skypenameToEmail`:
+The script creates dummy mail addresses in the form `skypename@unknown.com`. If you would like to use real mail addresses add an entry in the table `skypenameToEmail`:
 
 | skypename | email                                | name             |
 |-----------|--------------------------------------|------------------|
 | silvanm75 | silvan@muehlemann.com                | Silvan Mühlemann |
+| johndoe   | john@muehlemann.com                  | John Doe         |
 
 
