@@ -1,79 +1,14 @@
 <?php
 
-namespace Mpom;
+namespace Mpom\Command;
 
-use Google_Service_Gmail;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SkypeToGmail
+class Import extends CommandAbstract
 {
 
-    protected $config;
-
-    /** @var \PDO */
-    protected $dbh;
-
-    /** @var  \PDO */
-    protected $statusDbh;
-
-    /** @var  Gmail */
-    protected $gmail;
-
-    /** @var InputInterface */
-    protected $input;
-
-    /** @var OutputInterface */
-    protected $output;
-
-    public function __construct($config, InputInterface $input, OutputInterface $output)
-    {
-        $this->config = $config;
-
-        $this->input = $input;
-        $this->output = $output;
-    }
-
-    public function initDbConnection()
-    {
-        try {
-            $this->dbh = new \PDO($this->config['skypeDsn']);
-        } catch (\Exception $e) {
-            $this->output->writeln(
-                sprintf("<error>Error during setting up connection to Skype-database %s. DB-String is %s.</error>",
-                $e->getMessage(), $this->config['skypeDsn']));
-            return false;
-        }
-
-        try {
-            $this->statusDbh = new \PDO($this->config['statusDbDsn']);
-        } catch (\Exception $e) {
-            $this->output->writeln(
-                sprintf("<error>Error during setting up connection to Skype-database %s. DB-String is %s.</error>",
-                    $e->getMessage(), $this->config['statusDbDsn']));
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @return Gmail
-     */
-    public function initGmailConnection()
-    {
-        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->output->writeln("Init Gmail Connection");
-        }
-
-        $gmail = new Gmail($this->config);
-        $gmail->getClient();
-        $this->gmail = $gmail;
-        return $gmail;
-    }
-
-    public function getConversations()
+    public function run()
     {
         if (!$this->initDbConnection()) {
             return false;
@@ -114,6 +49,8 @@ class SkypeToGmail
             );
             $messageQuery->execute([':convoid' => $conversation['id'], ':timestamp' => $minTimestamp]);
 
+            $segment = new ConversationSegment($this->gmail, $this->dbh, $this->statusDbh, $this->output, $this->config);
+
             $lastTimestamp = null;
             foreach ($messageQuery->fetchAll() as $message) {
 
@@ -138,51 +75,14 @@ class SkypeToGmail
             if (isset($segment)) {
                 $this->storeSegmentAndUpdatePointer($segment);
             }
-            if ($this->input->getOption('progress')) {
+            if (isset($progress)) {
                 $progress->advance();
             }
             $segment = null;
         }
 
-        if ($this->input->getOption('progress')) {
+        if (isset($progress)) {
             $progress->finish();
-        }
-
-        return true;
-    }
-
-    public function initStatusDb()
-    {
-
-        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->output->writeln("Init status DB");
-        }
-
-        if (!$this->initDbConnection()) {
-            return false;
-        }
-
-        // See if database has been initialized.
-        $query = $this->statusDbh->query("SELECT name FROM sqlite_master WHERE name='importPointer'");
-        $query->execute();
-        if ($query->rowCount() == 0) {
-            $this->statusDbh->exec(
-                "CREATE TABLE `importPointer` (
-            	`convo_id`	INTEGER,
-            	`timestamp`	INTEGER,
-            	PRIMARY KEY(convo_id)
-            )"
-            );
-
-            $this->statusDbh->exec(
-                "CREATE TABLE `skypenameToEmail` (
-                    `skypename`	TEXT,
-                    `email`	TEXT,
-                    `name`	TEXT,
-                    PRIMARY KEY(skypename)
-                   );"
-            );
-
         }
 
         return true;
@@ -249,27 +149,6 @@ class SkypeToGmail
                 throw new \Exception("PDO-Exception: " . print_r($this->statusDbh->errorInfo(), true));
             }
         }
-    }
-
-    public function showLabels()
-    {
-        $this->initGmailConnection();
-        $service = new Google_Service_Gmail($this->gmail->getClient());
-        $results = $service->users_labels->listUsersLabels('me');
-
-        if (count($results->getLabels()) == 0) {
-            $this->output->writeln("No labels found.");
-        } else {
-            $this->output->writeln("Labels:");
-            foreach ($results->getLabels() as $label)  {
-                $labels[$label->getName()] = $label->getId();
-            }
-            asort($labels);
-            foreach ($labels as $key => $value) {
-                $this->output->writeln(sprintf("%-50s %s", $key, $value));
-            }
-        }
-
     }
 
 }

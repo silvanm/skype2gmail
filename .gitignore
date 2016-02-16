@@ -46,7 +46,8 @@ build/config/buildinfo.properties
 
 ._*
 .~lock.*
-vendor
+vendor/
 
+config/
 !.gitkeep
 !config/config.php.dist

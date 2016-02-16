@@ -8,7 +8,7 @@ return [
     // Absolute path to skype DB
     // e.g. "sqlite:/Users/OSX_USERNAME/Library/Application Support/Skype/SKYPE_USERNAME/main.db"
     'dsn' => 'sqlite:SKYPE_DB',
-    'statusDbDsn' => 'sqlite:' . __DIR__ . "/data/statusDb.db",
+    'statusDbDsn' => 'sqlite:' . __DIR__ . "/../data/statusDb.db",
 
     // After how many seconds of inactivity a conversation should be considered as closed
     'inactivityTriggerSeconds' => 3600,
