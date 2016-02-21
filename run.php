@@ -23,7 +23,7 @@ $console
         'Show a progressbar'
     )
     ->setCode(function(InputInterface $input, OutputInterface $output) use ($config) {
-        $skypeToGmail = new Mpom\SkypeToGmail($config, $input, $output);
+        $skypeToGmail = new Mpom\Command\Import($config, $input, $output);
         $skypeToGmail->run();
     });
 
@@ -32,7 +32,7 @@ $console
     ->setDescription('Show all Gmail labels')
     ->setCode(function(InputInterface $input, OutputInterface $output) use ($config) {
         $output->writeln("<info>Showing all possible Gmail labels of your account</info>");
-        $skypeToGmail = new Mpom\SkypeToGmail($config, $input, $output);
+        $skypeToGmail = new Mpom\Command\Labels($config, $input, $output);
         $skypeToGmail->run();
     });
 
@@ -41,7 +41,7 @@ $console
     ->setDescription('Initializes the StatusDB and Gmail API')
     ->setCode(function(InputInterface $input, OutputInterface $output) use ($config) {
         $output->writeln("<info>Initializing StatusDb</info>");
-        $skypeToGmail = new Mpom\SkypeToGmail($config, $input, $output);
+        $skypeToGmail = new Mpom\Command\Init($config, $input, $output);
         $skypeToGmail->run();
         $output->writeln("Initialization successful");
     });

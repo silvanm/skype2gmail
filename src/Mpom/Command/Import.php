@@ -2,6 +2,8 @@
 
 namespace Mpom\Command;
 
+use Mpom\CommandAbstract;
+use Mpom\ConversationSegment;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -136,8 +138,8 @@ class Import extends CommandAbstract
                 $query = $this->statusDbh->prepare(
                     "INSERT INTO importPointer(`convo_id`, `timestamp`) VALUES (:convoid, :timestamp) "
                 );
-                if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                    $this->output->writeln("inserting : " . $segment->getConvoId());
+                if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+                    $this->output->writeln("Inserting conversation: " . $segment->getConvoId());
                 }
 
                 $result = $query->execute(

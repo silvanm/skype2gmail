@@ -161,7 +161,7 @@ class ConversationSegment
         $service = new Google_Service_Gmail($this->gmail->getClient());
         $service->users_messages->insert('me', $msgbody, ['internalDateSource' => 'dateHeader']);
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->output->writeln("Storing convesation with subject '{$mail->subject}' and date '" . date('r',
+            $this->output->writeln("Storing conversation with subject '{$mail->subject}' and date '" . date('r',
                     $this->getMaxTimestamp()) . "'");
         }
     }
